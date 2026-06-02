@@ -1,0 +1,10 @@
+id: incident_search_tool
+name: incident_search_tool
+description: Searches incident/ticket databases.
+handler_type: builtin
+builtin_handler: incident_search_tool
+mcp_server_id: ''
+mcp_tool_name: ''
+parameters: {}
+tags: []
+is_builtin: true

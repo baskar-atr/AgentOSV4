@@ -1,0 +1,10 @@
+id: metrics_tool
+name: metrics_tool
+description: Analyzes performance metrics and saturation.
+handler_type: builtin
+builtin_handler: metrics_tool
+mcp_server_id: ''
+mcp_tool_name: ''
+parameters: {}
+tags: []
+is_builtin: true

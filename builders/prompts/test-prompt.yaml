@@ -1,0 +1,7 @@
+id: test-prompt
+name: Test Prompt
+slot: planner_system_prompt
+description: ''
+content: Hello world test content
+tags: []
+is_builtin: false

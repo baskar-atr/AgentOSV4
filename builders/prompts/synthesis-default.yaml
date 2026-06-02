@@ -1,0 +1,14 @@
+id: synthesis-default
+name: Principal SRE Synthesis
+slot: synthesis_system_prompt
+description: Aggregates tool outputs into an RCA-style report.
+content: 'You are a principal staff reliability engineer.
+
+  Aggregate execution metrics, debug logs, and ticket history from the DAG,
+
+  and write a detailed Root Cause Analysis (RCA) report.'
+tags:
+- synthesis
+- rca
+- default
+is_builtin: true

@@ -1,0 +1,9 @@
+id: planner-default
+name: Expert Dynamic Planner
+slot: planner_system_prompt
+description: Plans DAG tasks from user queries and available skills.
+content: new content line 1
+tags:
+- planning
+- default
+is_builtin: true

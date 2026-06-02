@@ -1,0 +1,16 @@
+id: filesystem-mcp
+name: Filesystem MCP
+description: Example stdio MCP for local filesystem access.
+transport: stdio
+command: npx
+args:
+- -y
+- '@modelcontextprotocol/server-filesystem'
+- /tmp
+url: ''
+env: {}
+enabled: true
+tags:
+- example
+- filesystem
+is_builtin: true

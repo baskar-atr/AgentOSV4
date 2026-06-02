@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentOS</title>
+    <style>
+        :root {
+            --bg: #212121; --sidebar: #171717; --surface: #2f2f2f; --surface-hover: #3a3a3a;
+            --border: #424242; --text: #ececec; --text-muted: #9b9b9b;
+            --accent: #10a37f; --accent-hover: #0d8c6d; --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        .app { display: flex; height: 100vh; }
+        .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.2s ease; overflow: hidden; }
+        .sidebar.collapsed { width: 52px; }
+        .sidebar.collapsed .brand-text,
+        .sidebar.collapsed .nav-label,
+        .sidebar.collapsed .sidebar-section,
+        .sidebar.collapsed #sidebar-collapse-btn { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 10px 8px; font-size: 18px; }
+        .brand { padding: 16px 14px 8px; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .icon-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+            border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 11px; flex-shrink: 0;
+        }
+        .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
+        .sidebar-expand-btn {
+            display: none; position: fixed; left: 8px; top: 8px; z-index: 50;
+        }
+        .sidebar.collapsed ~ .sidebar-expand-btn { display: block; }
+        .nav { padding: 0 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            border-radius: 8px; border: none; background: transparent; color: var(--text-muted);
+            font-size: 14px; cursor: pointer; text-align: left; width: 100%;
+        }
+        .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+        .nav-item.active { background: var(--surface); color: var(--text); }
+        .sidebar-section { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+        .sidebar-section.hidden { display: none; }
+        .conv-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+        .conv-item { padding: 10px 12px; border-radius: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; display: flex; justify-content: space-between; }
+        .conv-item:hover, .conv-item.active { background: var(--surface-hover); color: var(--text); }
+        .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+        .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .view { display: none; flex: 1; flex-direction: column; min-height: 0; }
+        .view.active { display: flex; }
+        .topbar { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--border); font-size: 14px; flex-shrink: 0; }
+        .btn {
+            padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+            background: transparent; color: var(--text); font-size: 13px; cursor: pointer;
+        }
+        .btn:hover { background: var(--surface-hover); }
+        .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .builder-layout { display: grid; grid-template-columns: 280px 1fr; flex: 1; min-height: 0; }
+        .builder-list { border-right: 1px solid var(--border); overflow-y: auto; padding: 12px; }
+        .builder-editor { overflow-y: auto; padding: 20px 24px; }
+        .list-card {
+            padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+            margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s;
+        }
+        .list-card:hover { border-color: var(--text-muted); }
+        .list-card.selected { border-color: var(--accent); background: rgba(16,163,127,0.08); }
+        .list-card h4 { font-size: 13px; margin-bottom: 4px; }
+        .list-card p { font-size: 11px; color: var(--text-muted); }
+        .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--surface); color: var(--text-muted); margin-right: 4px; }
+        label.lbl { display: block; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 14px 0 6px; }
+        input.inp, select.inp, textarea.inp {
+            width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text); font-size: 13px; font-family: inherit;
+        }
+        textarea.inp { min-height: 120px; resize: vertical; }
+        textarea.inp.lg { min-height: 200px; }
+        .form-actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+        .slot-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .slot-row label { margin: 0; font-size: 12px; color: var(--text-muted); }
+        .skill-assign { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+        .skill-assign input { margin-top: 3px; accent-color: var(--accent); }
+        .messages { flex: 1; overflow-y: auto; min-height: 0; }
+        .welcome { max-width: 680px; margin: 0 auto; padding: 48px 24px; text-align: center; }
+        .welcome h2 { font-size: 26px; margin-bottom: 10px; }
+        .welcome p { color: var(--text-muted); margin-bottom: 20px; }
+        .chip { padding: 10px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-size: 13px; cursor: pointer; margin: 4px; color: var(--text); }
+        .msg-row .msg-inner { max-width: 768px; margin: 0 auto; padding: 20px 24px; display: flex; gap: 14px; }
+        .msg-avatar { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+        .msg-avatar.user { background: #5436da; }
+        .msg-avatar.assistant { background: var(--accent); }
+        .msg-body { font-size: 15px; line-height: 1.6; white-space: pre-wrap; }
+        .msg-usage { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .composer-wrap {
+            padding: 16px 24px 24px; max-width: 768px; margin: 0 auto; width: 100%;
+            flex-shrink: 0; border-top: 1px solid var(--border); background: var(--bg);
+            position: relative; z-index: 5;
+        }
+        .composer { display: flex; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; }
+        .composer textarea {
+            flex: 1; background: none; border: none; color: var(--text); font-size: 15px;
+            resize: none; outline: none; max-height: 160px; font-family: inherit;
+            pointer-events: auto; min-height: 24px;
+        }
+        .composer textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+        .composer.running { border-color: var(--accent); opacity: 1; }
+        .run-status {
+            margin-bottom: 8px; font-size: 12px; color: var(--text-muted);
+            min-height: 18px; display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .phase-pill {
+            border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px;
+            background: var(--surface); text-transform: capitalize;
+        }
+        .phase-pill.running { border-color: #60a5fa; color: #93c5fd; }
+        .phase-pill.completed { border-color: #34d399; color: #6ee7b7; }
+        .phase-pill.failed { border-color: #f87171; color: #fca5a5; }
+        .send-btn { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--text-muted); cursor: pointer; color: var(--bg); }
+        .send-btn.ready { background: var(--accent); color: #fff; }
+        .agent-select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; margin-bottom: 8px; }
+        .empty-hint { padding: 24px; color: var(--text-muted); font-size: 13px; text-align: center; }
+        .preview-box { margin-top: 16px; padding: 12px; background: #1a1a1a; border-radius: 8px; font-size: 12px; color: var(--text-muted); white-space: pre-wrap; max-height: 160px; overflow-y: auto; }
+        .ws-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block; margin-right: 6px; }
+        .ws-dot.on { background: var(--accent); }
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            padding: 12px 20px; border-radius: 8px; font-size: 13px; z-index: 200;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4); max-width: 90vw;
+        }
+        .toast.ok { background: var(--accent); color: #fff; }
+        .toast.err { background: var(--danger); color: #fff; }
+        .toast.hide { display: none; }
+        .save-status { font-size: 12px; color: var(--text-muted); margin-left: 8px; }
+        #conn-banner {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+            background: #7f1d1d; color: #fff; padding: 14px 20px;
+            font-size: 14px; text-align: center; line-height: 1.5;
+        }
+        #conn-banner code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+        body.banner-visible { padding-top: 72px; }
+        .obs-layout { display: flex; flex: 1; min-height: 0; gap: 0; }
+        .obs-pane {
+            display: flex; flex-direction: column; min-height: 0; background: var(--bg);
+            border-right: 1px solid var(--border); transition: width 0.2s ease, min-width 0.2s ease;
+        }
+        .obs-pane-sessions { width: 260px; min-width: 260px; flex-shrink: 0; }
+        .obs-pane.collapsed { width: 36px !important; min-width: 36px !important; }
+        .obs-pane.collapsed .pane-body,
+        .obs-pane.collapsed .pane-title { display: none; }
+        .obs-pane.collapsed .pane-head { justify-content: center; padding: 8px 4px; }
+        .pane-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+            font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .pane-body { flex: 1; overflow: auto; min-height: 0; padding: 12px; }
+        .obs-main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+        .obs-pane-summary { flex-shrink: 0; border-right: none; border-bottom: 1px solid var(--border); }
+        .obs-pane-summary.collapsed .pane-body { display: none; }
+        .obs-summary {
+            display: flex; flex-wrap: wrap; gap: 12px 16px; font-size: 12px; color: var(--text-muted);
+        }
+        .obs-summary strong { color: var(--text); }
+        .obs-panels { display: flex; flex: 1; min-height: 0; }
+        .obs-pane-tree { flex: 1; min-width: 200px; border-right: 1px solid var(--border); }
+        .obs-pane-detail { width: 340px; min-width: 36px; flex-shrink: 0; }
+        .obs-pane-detail.collapsed { width: 36px !important; min-width: 36px !important; }
+        .obs-pane-tree.collapsed { width: 36px !important; min-width: 36px !important; flex: 0 0 36px; }
+        .obs-tree-panel, .obs-detail-panel { height: 100%; }
+        .obs-tree { list-style: none; }
+        .obs-tree ul { list-style: none; margin-left: 18px; border-left: 1px solid var(--border); padding-left: 8px; }
+        .obs-node {
+            display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px;
+            border-radius: 6px; cursor: pointer; margin: 2px 0;
+        }
+        .obs-node:hover { background: var(--surface-hover); }
+        .obs-node.selected { background: rgba(16,163,127,0.12); }
+        .obs-node .toggle { width: 14px; color: var(--text-muted); font-size: 10px; flex-shrink: 0; user-select: none; }
+        .obs-node .toggle.empty { visibility: hidden; }
+        .obs-badge {
+            font-size: 10px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+            flex-shrink: 0; font-weight: 600;
+        }
+        .obs-badge.completed { background: rgba(16,163,127,0.25); color: #6ee7b7; }
+        .obs-badge.running { background: rgba(59,130,246,0.25); color: #93c5fd; }
+        .obs-badge.failed { background: rgba(239,68,68,0.25); color: #fca5a5; }
+        .obs-badge.pending { background: rgba(156,163,175,0.2); color: #d1d5db; }
+        .obs-badge.info { background: var(--surface); color: var(--text-muted); }
+        .obs-node-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .obs-kind { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+        .obs-live { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .obs-detail pre {
+            background: #1a1a1a; padding: 10px; border-radius: 6px; overflow-x: auto;
+            white-space: pre-wrap; word-break: break-word; margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+<div id="conn-banner" role="alert"></div>
+<div class="app">
+    <aside class="sidebar" id="app-sidebar">
+        <div class="brand">
+            <span class="brand-text">AgentOS</span>
+            <button type="button" class="icon-btn" id="sidebar-collapse-btn" title="Collapse sidebar">◀</button>
+        </div>
+        <nav class="nav">
+            <button class="nav-item active" data-view="chat" type="button" title="Chat"><span>💬</span><span class="nav-label"> Chat</span></button>
+            <button class="nav-item" data-view="prompts" type="button" title="Prompt Builder"><span>📝</span><span class="nav-label"> Prompt Builder</span></button>
+            <button class="nav-item" data-view="skills" type="button" title="Skill Builder"><span>⚡</span><span class="nav-label"> Skill Builder</span></button>
+            <button class="nav-item" data-view="llms" type="button" title="LLM Models"><span>🧠</span><span class="nav-label"> LLM Models</span></button>
+            <button class="nav-item" data-view="mcp" type="button" title="MCP Servers"><span>🔌</span><span class="nav-label"> MCP Servers</span></button>
+            <button class="nav-item" data-view="tools" type="button" title="Tools Config"><span>🛠</span><span class="nav-label"> Tools Config</span></button>
+            <button class="nav-item" data-view="agents" type="button" title="Agent Studio"><span>🤖</span><span class="nav-label"> Agent Studio</span></button>
+            <button class="nav-item" data-view="observability" type="button" title="Observability"><span>📊</span><span class="nav-label"> Observability</span></button>
+        </nav>
+        <div class="sidebar-section" id="chat-sidebar">
+            <div style="padding:8px"><button class="btn" id="new-chat-btn" type="button" style="width:100%">+ New chat</button></div>
+            <div class="conv-list" id="conv-list"></div>
+            <div class="sidebar-footer">
+                <select class="agent-select" id="agent-select"></select>
+            </div>
+        </div>
+    </aside>
+    <button type="button" class="icon-btn sidebar-expand-btn" id="sidebar-expand-btn" title="Expand sidebar">▶</button>
+
+    <main class="main">
+        <!-- CHAT -->
+        <div class="view active" id="view-chat">
+            <header class="topbar">
+                <span id="chat-title">Chat</span>
+                <span><span class="ws-dot" id="ws-dot"></span><span id="ws-label" style="font-size:12px;color:var(--text-muted)">Ready</span></span>
+            </header>
+            <div class="messages" id="messages">
+                <div class="welcome" id="welcome">
+                    <h2>How can I help?</h2>
+                    <p>Build prompts & skills in their builders, assign them in Agent Studio, then chat here.</p>
+                    <div>
+                        <button class="chip" type="button" data-q="Analyze production issue INC123">Triage INC123</button>
+                        <button class="chip" type="button" data-q="Generate RCA for INC-9812">RCA INC-9812</button>
+                    </div>
+                </div>
+            </div>
+            <div class="composer-wrap">
+                <div class="run-status" id="run-status"></div>
+                <form class="composer" id="composer-form">
+                    <textarea id="user-input" rows="1" placeholder="Message…" aria-label="Message input"></textarea>
+                    <button class="send-btn" id="send-btn" type="submit">↑</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- PROMPT BUILDER -->
+        <div class="view" id="view-prompts">
+            <header class="topbar">
+                <span>Prompt Builder</span>
+                <button class="btn btn-primary" id="prompt-new-btn" type="button">+ New prompt</button>
+            </header>
+            <div class="builder-layout">
+                <div class="builder-list" id="prompt-list"></div>
+                <div class="builder-editor">
+                    <p class="empty-hint" id="prompt-empty">Select a prompt or click "+ New prompt".</p>
+                    <form id="prompt-form" style="display:none">
+                        <h3 id="pf-title" style="margin-bottom:12px">Edit prompt</h3>
+                        <label class="lbl" for="pf-name">Name</label>
+                        <input class="inp" id="pf-name" name="name" type="text" required>
+                        <label class="lbl" for="pf-slot">Slot</label>
+                        <select class="inp" id="pf-slot" name="slot" required></select>
+                        <label class="lbl" for="pf-desc">Description</label>
+                        <input class="inp" id="pf-desc" name="description" type="text">
+                        <label class="lbl" for="pf-content">Content</label>
+                        <textarea class="inp lg" id="pf-content" name="content" required></textarea>
+                        <label class="lbl" for="pf-tags">Tags (comma-separated)</label>
+                        <input class="inp" id="pf-tags" name="tags" type="text">
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">Save prompt</button>
+                            <button class="btn btn-danger" id="pf-delete" type="button" style="display:none">Delete</button>
+                            <span class="save-status" id="pf-status"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SKILL BUILDER -->
+        <div class="view" id="view-skills">
+            <header class="topbar">
+                <span>Skill Builder</span>
+                <button class="btn btn-primary" id="skill-new-btn" type="button">+ New skill</button>
+            </header>
+            <div class="builder-layout">
+                <div class="builder-list" id="skill-list"></div>
+                <div class="builder-editor">
+                    <p class="empty-hint" id="skill-empty">Select a skill or click "+ New skill".</p>
+                    <form id="skill-form" style="display:none">
+                        <h3 id="sf-title" style="margin-bottom:12px">Edit skill</h3>
+                        <label class="lbl" for="sf-name">Name</label>
+                        <input class="inp" id="sf-name" name="name" type="text" required>
+                        <label class="lbl" for="sf-desc">Description</label>
+                        <textarea class="inp" id="sf-desc" name="description"></textarea>
+                        <label class="lbl" for="sf-triggers">Trigger keywords (comma-separated)</label>
+                        <input class="inp" id="sf-triggers" name="triggers" type="text">
+                        <label class="lbl" for="sf-tools">Tools (comma-separated)</label>
+                        <input class="inp" id="sf-tools" name="tools" type="text">
+                        <label class="lbl" for="sf-hints">Planner hints</label>
+                        <textarea class="inp" id="sf-hints" name="hints"></textarea>
+                        <label class="lbl" for="sf-deps">Dependencies (comma-separated)</label>
+                        <input class="inp" id="sf-deps" name="deps" type="text">
+                        <label class="lbl"><input type="checkbox" id="sf-parallel" checked> Parallelizable</label>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">Save skill</button>
+                            <button class="btn btn-danger" id="sf-delete" type="button" style="display:none">Delete</button>
+                            <span class="save-status" id="sf-status"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM BUILDER -->
+        <div class="view" id="view-llms">
+            <header class="topbar">
+                <span>LLM Models</span>
+                <button class="btn btn-primary" id="llm-new-btn" type="button">+ New model</button>
+            </header>
+            <div class="builder-layout">
+                <div class="builder-list" id="llm-list"></div>
+                <div class="builder-editor">
+                    <p class="empty-hint" id="llm-empty">Select a model or click "+ New model".</p>
+                    <form id="llm-form" style="display:none">
+                        <h3 id="lf-title" style="margin-bottom:12px">Edit model</h3>
+                        <label class="lbl" for="lf-name">Display name</label>
+                        <input class="inp" id="lf-name" type="text" required>
+                        <label class="lbl" for="lf-provider">Provider</label>
+                        <select class="inp" id="lf-provider" required></select>
+                        <label class="lbl" for="lf-model">Model name</label>
+                        <input class="inp" id="lf-model" type="text" required>
+                        <label class="lbl" for="lf-desc">Description</label>
+                        <input class="inp" id="lf-desc" type="text">
+                        <label class="lbl" for="lf-api-env">API key env var</label>
+                        <input class="inp" id="lf-api-env" type="text" placeholder="OPENAI_API_KEY">
+                        <label class="lbl" for="lf-base">Base URL (optional)</label>
+                        <input class="inp" id="lf-base" type="text">
+                        <label class="lbl" for="lf-temp">Temperature</label>
+                        <input class="inp" id="lf-temp" type="number" step="0.1" min="0" max="2" value="0">
+                        <label class="lbl" for="lf-tokens">Max tokens</label>
+                        <input class="inp" id="lf-tokens" type="number" min="1" value="2048">
+                        <label class="lbl" for="lf-tags">Tags (comma-separated)</label>
+                        <input class="inp" id="lf-tags" type="text">
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">Save model</button>
+                            <button class="btn btn-danger" id="lf-delete" type="button" style="display:none">Delete</button>
+                            <span class="save-status" id="lf-status"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MCP BUILDER -->
+        <div class="view" id="view-mcp">
+            <header class="topbar">
+                <span>MCP Servers</span>
+                <button class="btn btn-primary" id="mcp-new-btn" type="button">+ New server</button>
+            </header>
+            <div class="builder-layout">
+                <div class="builder-list" id="mcp-list"></div>
+                <div class="builder-editor">
+                    <p class="empty-hint" id="mcp-empty">Select a server or click "+ New server".</p>
+                    <form id="mcp-form" style="display:none">
+                        <h3 id="mf-title" style="margin-bottom:12px">Edit MCP server</h3>
+                        <label class="lbl" for="mf-name">Name</label>
+                        <input class="inp" id="mf-name" type="text" required>
+                        <label class="lbl" for="mf-transport">Transport</label>
+                        <select class="inp" id="mf-transport" required></select>
+                        <label class="lbl" for="mf-desc">Description</label>
+                        <input class="inp" id="mf-desc" type="text">
+                        <label class="lbl" for="mf-cmd">Command (stdio)</label>
+                        <input class="inp" id="mf-cmd" type="text" placeholder="npx">
+                        <label class="lbl" for="mf-args">Args (comma-separated)</label>
+                        <input class="inp" id="mf-args" type="text" placeholder="-y,@modelcontextprotocol/server-filesystem,/tmp">
+                        <label class="lbl" for="mf-url">URL (SSE)</label>
+                        <input class="inp" id="mf-url" type="text" placeholder="http://localhost:3001/sse">
+                        <label class="lbl" for="mf-env">Env vars (KEY=value, comma-separated)</label>
+                        <input class="inp" id="mf-env" type="text">
+                        <label class="lbl"><input type="checkbox" id="mf-enabled" checked> Enabled</label>
+                        <label class="lbl" for="mf-tags">Tags (comma-separated)</label>
+                        <input class="inp" id="mf-tags" type="text">
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">Save server</button>
+                            <button class="btn btn-danger" id="mf-delete" type="button" style="display:none">Delete</button>
+                            <span class="save-status" id="mf-status"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOOLS CONFIG -->
+        <div class="view" id="view-tools">
+            <header class="topbar">
+                <span>Tools Configuration</span>
+                <button class="btn btn-primary" id="tool-new-btn" type="button">+ New tool</button>
+            </header>
+            <div class="builder-layout">
+                <div class="builder-list" id="tool-list"></div>
+                <div class="builder-editor">
+                    <p class="empty-hint" id="tool-empty">Select a tool or click "+ New tool".</p>
+                    <form id="tool-form" style="display:none">
+                        <h3 id="tf-title" style="margin-bottom:12px">Edit tool</h3>
+                        <label class="lbl" for="tf-name">Registry name</label>
+                        <input class="inp" id="tf-name" type="text" required placeholder="my_custom_tool">
+                        <label class="lbl" for="tf-handler">Handler type</label>
+                        <select class="inp" id="tf-handler" required></select>
+                        <label class="lbl" for="tf-builtin">Built-in handler</label>
+                        <select class="inp" id="tf-builtin"></select>
+                        <label class="lbl" for="tf-desc">Description</label>
+                        <textarea class="inp" id="tf-desc"></textarea>
+                        <label class="lbl" for="tf-mcp-server">MCP server id</label>
+                        <input class="inp" id="tf-mcp-server" type="text">
+                        <label class="lbl" for="tf-mcp-tool">MCP tool name</label>
+                        <input class="inp" id="tf-mcp-tool" type="text">
+                        <label class="lbl" for="tf-tags">Tags (comma-separated)</label>
+                        <input class="inp" id="tf-tags" type="text">
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">Save tool</button>
+                            <button class="btn btn-danger" id="tf-delete" type="button" style="display:none">Delete</button>
+                            <span class="save-status" id="tf-status"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- OBSERVABILITY -->
+        <div class="view" id="view-observability">
+            <header class="topbar">
+                <span>Hierarchical Observability</span>
+                <div class="obs-live">
+                    <span class="ws-dot" id="obs-ws-dot"></span>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                        <input type="checkbox" id="obs-live-cb"> Live updates
+                    </label>
+                    <button class="btn" id="obs-refresh-btn" type="button">Refresh</button>
+                </div>
+            </header>
+            <div class="obs-layout" id="obs-layout">
+                <aside class="obs-pane obs-pane-sessions" id="obs-pane-sessions">
+                    <div class="pane-head">
+                        <span class="pane-title">Sessions</span>
+                        <button type="button" class="icon-btn pane-toggle" data-pane="obs-pane-sessions" title="Collapse">◀</button>
+                    </div>
+                    <div class="pane-body" id="obs-session-list">
+                        <p class="empty-hint" style="font-size:11px">Sessions → Threads → Traces → Spans</p>
+                    </div>
+                </aside>
+                <div class="obs-main">
+                    <div class="obs-pane obs-pane-summary" id="obs-pane-summary">
+                        <div class="pane-head">
+                            <span class="pane-title">Summary</span>
+                            <button type="button" class="icon-btn pane-toggle" data-pane="obs-pane-summary" title="Collapse">▲</button>
+                        </div>
+                        <div class="pane-body">
+                            <div class="obs-summary" id="obs-summary" style="display:none"></div>
+                        </div>
+                    </div>
+                    <div class="obs-panels" id="obs-panels">
+                        <div class="obs-pane obs-pane-tree" id="obs-pane-tree">
+                            <div class="pane-head">
+                                <span class="pane-title">Trace tree</span>
+                                <button type="button" class="icon-btn pane-toggle" data-pane="obs-pane-tree" title="Collapse">◀</button>
+                            </div>
+                            <div class="pane-body obs-tree-panel">
+                                <p class="empty-hint" id="obs-tree-empty">Select a session to view the trace tree.</p>
+                                <ul class="obs-tree" id="obs-tree" style="display:none"></ul>
+                            </div>
+                        </div>
+                        <div class="obs-pane obs-pane-detail collapsed" id="obs-pane-detail">
+                            <div class="pane-head">
+                                <span class="pane-title">Span detail</span>
+                                <button type="button" class="icon-btn pane-toggle" data-pane="obs-pane-detail" title="Expand">◀</button>
+                            </div>
+                            <div class="pane-body obs-detail-panel">
+                                <p class="empty-hint" id="obs-detail-empty">Click a span for details.</p>
+                                <div id="obs-detail" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AGENT STUDIO -->
+        <div class="view" id="view-agents">
+            <header class="topbar">
+                <span>Agent Studio</span>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <select class="inp" id="studio-agent-select" style="width:auto;min-width:180px"></select>
+                    <button class="btn" id="studio-new-agent-btn" type="button">+ Agent</button>
+                    <button class="btn btn-primary" id="studio-save-btn" type="button">Save configuration</button>
+                </div>
+            </header>
+            <div class="builder-editor" style="max-width:720px">
+                <h3 style="font-size:15px;margin-bottom:4px">Prompt assignments</h3>
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Map each slot to a template from Prompt Builder.</p>
+                <div id="studio-prompt-bindings"></div>
+                <h3 style="font-size:15px;margin:20px 0 4px">Skills</h3>
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Enable skills from Skill Builder for this agent.</p>
+                <div id="studio-skills"></div>
+                <h3 style="font-size:15px;margin:20px 0 4px">LLM models</h3>
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Primary and secondary models from LLM Models builder.</p>
+                <div class="slot-row">
+                    <div><strong style="font-size:13px">Primary</strong></div>
+                    <select class="inp" id="studio-primary-llm"></select>
+                </div>
+                <div class="slot-row">
+                    <div><strong style="font-size:13px">Secondary</strong></div>
+                    <select class="inp" id="studio-secondary-llm"></select>
+                </div>
+                <h3 style="font-size:15px;margin:20px 0 4px">MCP servers</h3>
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Attach MCP servers configured in MCP Servers builder.</p>
+                <div id="studio-mcp"></div>
+                <h3 style="font-size:15px;margin:20px 0 4px">Tools</h3>
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Enable tools from Tools Configuration for this agent.</p>
+                <div id="studio-tools"></div>
+                <div class="preview-box" id="studio-preview" style="display:none"></div>
+            </div>
+        </div>
+    </main>
+</div>
+<div id="toast" class="toast hide" role="status"></div>
+<script>
+(function () {
+    const banner = document.getElementById('conn-banner');
+    function showBanner(html) {
+        banner.innerHTML = html;
+        banner.style.display = 'block';
+        document.body.classList.add('banner-visible');
+    }
+    function loadApp() {
+        const s = document.createElement('script');
+        s.src = '/app.js?v=' + Date.now();
+        s.onload = function () { banner.style.display = 'none'; };
+        s.onerror = function () {
+            showBanner(
+                'UI script failed to load (<code>/app.js</code>). ' +
+                'Restart backend: <code>./start.sh</code>'
+            );
+        };
+        document.body.appendChild(s);
+    }
+    fetch('/api/health', { cache: 'no-store' })
+        .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function (data) {
+            if (data.status !== 'ok') throw new Error('bad health');
+            if (typeof data.llms !== 'number') {
+                throw new Error('stale backend — missing LLM/MCP/tools API');
+            }
+            loadApp();
+        })
+        .catch(function (err) {
+            var extra = (err && err.message && err.message.indexOf('stale') >= 0)
+                ? '<br><strong>Stale server on port 8000.</strong> Stop all uvicorn processes, then run <code>./start.sh</code> again.'
+                : '';
+            showBanner(
+                'Backend not connected on <code>' + location.host + '</code>.<br>' +
+                'In the AgentOSV4 folder run: <code>./start.sh</code><br>' +
+                'Then open <a href="http://localhost:8000" style="color:#fff;font-weight:bold">http://localhost:8000</a> ' +
+                '(do not open index.html as a file).' + extra
+            );
+        });
+})();
+</script>
+</body>
+</html>

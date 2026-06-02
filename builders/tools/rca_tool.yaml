@@ -1,0 +1,10 @@
+id: rca_tool
+name: rca_tool
+description: Synthesizes RCA reports from triage outputs.
+handler_type: builtin
+builtin_handler: rca_tool
+mcp_server_id: ''
+mcp_tool_name: ''
+parameters: {}
+tags: []
+is_builtin: true

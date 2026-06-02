@@ -1,0 +1,32 @@
+id: default
+name: TriageAgent
+description: Default incident triage and RCA agent
+version: 1.0.0
+primary_llm_id: gpt-4-turbo
+secondary_llm_id: gpt-3-5-turbo
+primary_llm:
+  provider: simulated
+  model_name: gpt-4-turbo
+  temperature: 0.0
+  max_tokens: 2048
+secondary_llm:
+  provider: simulated
+  model_name: gpt-3.5-turbo
+  temperature: 0.2
+  max_tokens: 1024
+prompt_bindings:
+  planner_system_prompt: planner-default
+  synthesis_system_prompt: synthesis-default
+prompts: {}
+enabled_skills:
+  - IncidentTriageSkill
+  - RootCauseAnalysisSkill
+enabled_tools:
+  - logs_tool
+  - metrics_tool
+  - incident_search_tool
+  - rca_tool
+enabled_mcp_servers: []
+policies:
+  max_concurrency: 4
+  timeout_seconds: 30

@@ -1,0 +1,7 @@
+id: ui-test
+name: UI Test
+slot: planner_system_prompt
+description: ''
+content: test body
+tags: []
+is_builtin: false

@@ -1,0 +1,13 @@
+id: testskill
+name: testSkill
+description: test skill data
+trigger_conditions:
+- test
+tools:
+- test
+planner_hints: test
+dependencies:
+- test
+examples: []
+parallelizable: true
+is_builtin: false

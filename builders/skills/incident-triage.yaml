@@ -1,0 +1,22 @@
+id: incident-triage
+name: IncidentTriageSkill
+description: Gathers logs, metrics, and ticket search for production issues.
+trigger_conditions:
+- incident
+- inc
+- issue
+- bug
+- crash
+- production issue
+- outage
+- triage
+- error
+tools:
+- logs_tool
+- metrics_tool
+- incident_search_tool
+planner_hints: Run logs, metrics, and tickets concurrently.
+dependencies: []
+examples: []
+parallelizable: true
+is_builtin: true

@@ -1,0 +1,17 @@
+id: root-cause-analysis
+name: RootCauseAnalysisSkill
+description: Synthesizes RCA report after triage completes.
+trigger_conditions:
+- rca
+- root cause
+- analyze
+- synthesize
+- explain why
+tools:
+- rca_tool
+planner_hints: Must run after triage tasks complete.
+dependencies:
+- IncidentTriageSkill
+examples: []
+parallelizable: false
+is_builtin: true

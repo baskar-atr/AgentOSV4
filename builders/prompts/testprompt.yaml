@@ -1,0 +1,8 @@
+id: testprompt
+name: testPrompt
+slot: planner_system_prompt
+description: test
+content: test
+tags:
+- test
+is_builtin: false

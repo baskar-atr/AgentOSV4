@@ -1,0 +1,12 @@
+id: customskill
+name: CustomSkill
+description: d
+trigger_conditions:
+- test
+tools:
+- logs_tool
+planner_hints: ''
+dependencies: []
+examples: []
+parallelizable: true
+is_builtin: false

@@ -1,0 +1,44 @@
+id: newtestagent
+name: NewTestAgent
+version: 1.0.0
+description: 'Custom agent: NewTestAgent'
+primary_llm_id: gpt-4-turbo
+secondary_llm_id: gpt-3-5-turbo
+primary_llm:
+  provider: simulated
+  model_name: gpt-4-turbo
+  temperature: 0.0
+  max_tokens: 2048
+secondary_llm:
+  provider: simulated
+  model_name: gpt-3.5-turbo
+  temperature: 0.2
+  max_tokens: 1024
+prompt_bindings:
+  planner_system_prompt: planner-default
+  synthesis_system_prompt: synthesis-default
+  tool_guidance_prompt: test-prompt
+  user_context_prompt: testprompt
+prompts:
+  planner_system_prompt: new content line 1
+  synthesis_system_prompt: 'You are a principal staff reliability engineer.
+
+    Aggregate execution metrics, debug logs, and ticket history from the DAG,
+
+    and write a detailed Root Cause Analysis (RCA) report.'
+  tool_guidance_prompt: Hello world test content
+  user_context_prompt: test
+enabled_skills:
+- IncidentTriageSkill
+- RootCauseAnalysisSkill
+enabled_tools:
+- incident_search_tool
+- logs_tool
+- metrics_tool
+- rca_tool
+- testTool
+enabled_mcp_servers:
+- filesystem-mcp
+policies:
+  max_concurrency: 4
+  timeout_seconds: 30

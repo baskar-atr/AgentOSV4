@@ -1,0 +1,10 @@
+id: logs_tool
+name: logs_tool
+description: Queries application and system logs for errors.
+handler_type: builtin
+builtin_handler: logs_tool
+mcp_server_id: ''
+mcp_tool_name: ''
+parameters: {}
+tags: []
+is_builtin: true

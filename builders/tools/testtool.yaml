@@ -1,0 +1,11 @@
+id: testtool
+name: testTool
+description: qqe
+handler_type: simulated
+builtin_handler: logs_tool
+mcp_server_id: asdas
+mcp_tool_name: asd
+parameters: {}
+tags:
+- adas
+is_builtin: false
